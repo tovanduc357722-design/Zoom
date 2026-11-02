@@ -1,0 +1,48 @@
+{
+  "name": "healthconnect",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n api,web \"npm run dev -w @healthconnect/api\" \"npm run dev -w @healthconnect/web\"",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p apps/api && tsc --noEmit -p apps/web",
+    "test": "node scripts/run-api-tests.mjs",
+    "db:generate": "node scripts/generate-client.mjs",
+    "db:migrate": "node scripts/migrate.mjs",
+    "db:seed": "tsx prisma/seed.ts",
+    "test:e2e": "playwright test",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "7.10.1",
+    "@prisma/client": "7.10.1",
+    "dotenv": "17.2.3",
+    "pg": "8.16.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "@prisma/client-generator-js": "7.10.1",
+    "@prisma/internals": "7.10.1",
+    "@sparticuz/chromium": "141.0.0",
+    "@types/node": "24.10.0",
+    "@types/pg": "8.15.6",
+    "@types/supertest": "6.0.3",
+    "concurrently": "9.2.1",
+    "eslint": "9.39.1",
+    "prettier": "3.6.2",
+    "prisma": "7.10.1",
+    "socket.io-client": "4.8.1",
+    "supertest": "7.1.4",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.46.3"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+
+}
+enum Role {
+  SUPER_ADMIN
+  DEPARTMENT_ADMIN
+  FACILITY_ADMIN
+  DOCTOR
+  PATIENT
+}
+enum Availability {
+  OFFLINE
+  ONLINE
+  RINGING
+  BUSY
+  BREAK
+}
+enum CallState {
+  PENDING
+  RINGING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+  TIMEOUT
+  MEETING_CREATING
+  MEETING_READY
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+model Tenant {
+  id String @id @default(uuid()) @db.Uuid
+  name String
+  facilities Facility[]
+  users User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model Facility {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  name String
+  users User[]
+  calls Call[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([id, tenantId])
+}
+model User {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  facilityId String @db.Uuid
+  facility Facility @relation(fields: [facilityId, tenantId], references: [id, tenantId])
+  email String @unique
+  name String
+  passwordHash String
+  role Role @default(PATIENT)
+  specialty String?
+  availability Availability @default(OFFLINE)
+  heartbeatAt DateTime?
+  sessions Session[]
+  patientCalls Call[] @relation("Patient")
+  doctorCalls Call[] @relation("Doctor")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([id, tenantId, facilityId])
+  @@index([tenantId, facilityId, role, availability])
+}
+model Session {
+  id String @id @default(uuid()) @db.Uuid
+  tokenHash String @unique
+  userId String @db.Uuid
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  @@index([expiresAt])
+}
+model Call {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  facilityId String @db.Uuid
+  facility Facility @relation(fields: [facilityId, tenantId], references: [id, tenantId])
+  doctorId String @db.Uuid
+  doctor User @relation("Doctor", fields: [doctorId, tenantId, facilityId], references: [id, tenantId, facilityId])
+  patientId String @db.Uuid
+  patient User @relation("Patient", fields: [patientId, tenantId, facilityId], references: [id, tenantId, facilityId])
+  state CallState @default(PENDING)
+  idempotencyKey String
+  expiresAt DateTime
+  endedAt DateTime?
+  consultation Consultation?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([patientId, idempotencyKey])
+  @@index([state, expiresAt])
+  @@index([tenantId, facilityId])
+}
+model Consultation {
+  id String @id @default(uuid()) @db.Uuid
+  callId String @unique @db.Uuid
+  call Call @relation(fields: [callId], references: [id])
+  meeting ZoomMeeting?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model ZoomMeeting {
+  id String @id @default(uuid()) @db.Uuid
+  consultationId String @unique @db.Uuid
+  consultation Consultation @relation(fields: [consultationId], references: [id])
+  provider String @default("mock")
+  externalId String @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model AuditLog {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  actorId String @db.Uuid
+  action String
+  targetId String @db.Uuid
+  createdAt DateTime @default(now())
+  @@index([tenantId, createdAt])
+}
